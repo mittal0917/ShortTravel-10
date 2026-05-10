@@ -562,7 +562,7 @@ Tilemap:
   m_TileColorArray: []
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
-  m_Color: {r: 0.9528302, g: 0.92236084, b: 0.92136884, a: 1}
+  m_Color: {r: 0.9622642, g: 0.94864726, b: 0.94864726, a: 1}
   m_Origin: {x: 0, y: 0, z: 0}
   m_Size: {x: 0, y: 0, z: 1}
   m_TileAnchor: {x: 0.5, y: 0.5, z: 0}
@@ -809,7 +809,7 @@ Tilemap:
   m_TileColorArray: []
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
-  m_Color: {r: 0.89720327, g: 0.9528302, b: 0.8944019, a: 1}
+  m_Color: {r: 0.92346627, g: 0.9528302, b: 0.92136884, a: 1}
   m_Origin: {x: 0, y: 0, z: 0}
   m_Size: {x: 0, y: 0, z: 1}
   m_TileAnchor: {x: 0.5, y: 0.5, z: 0}
@@ -935,19 +935,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5819676258579829692, guid: 63a8ca873877f490da0e469eb0e92626, type: 3}
       propertyPath: m_Color.b
-      value: 0.92136884
+      value: 0.94864726
       objectReference: {fileID: 0}
     - target: {fileID: 5819676258579829692, guid: 63a8ca873877f490da0e469eb0e92626, type: 3}
       propertyPath: m_Color.g
-      value: 0.92236084
+      value: 0.94864726
       objectReference: {fileID: 0}
     - target: {fileID: 5819676258579829692, guid: 63a8ca873877f490da0e469eb0e92626, type: 3}
       propertyPath: m_Color.r
-      value: 0.9528302
+      value: 0.9622642
       objectReference: {fileID: 0}
     - target: {fileID: 6553565498301610792, guid: 63a8ca873877f490da0e469eb0e92626, type: 3}
       propertyPath: m_Color.b
-      value: 0.8944019
+      value: 0.92136884
       objectReference: {fileID: 0}
     - target: {fileID: 6553565498301610792, guid: 63a8ca873877f490da0e469eb0e92626, type: 3}
       propertyPath: m_Color.g
@@ -955,7 +955,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6553565498301610792, guid: 63a8ca873877f490da0e469eb0e92626, type: 3}
       propertyPath: m_Color.r
-      value: 0.89720327
+      value: 0.92346627
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
