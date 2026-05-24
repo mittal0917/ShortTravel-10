@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5820760635837870463}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Fill Area
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48,7 +48,7 @@ GameObject:
   - component: {fileID: 8368262668562086525}
   - component: {fileID: 1325708896304603526}
   - component: {fileID: 8889461910711531078}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: healthBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -148,7 +148,8 @@ GameObject:
   m_Component:
   - component: {fileID: 6361429700909125280}
   - component: {fileID: 121498665474503053}
-  m_Layer: 0
+  - component: {fileID: 1276235451336745293}
+  m_Layer: 7
   m_Name: Enemy_NormalZombie
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -186,6 +187,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 100
   moveSpeed: 3
+--- !u!114 &1276235451336745293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4977323317136520062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be5cb2bc27573424ca5f4a48e60cdc32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyPrefab: {fileID: 0}
+  spawnRadius: 5
+  spawnInterval: 3
 --- !u!1 &6006041351578681948
 GameObject:
   m_ObjectHideFlags: 0
@@ -197,7 +213,7 @@ GameObject:
   - component: {fileID: 6376096633656498914}
   - component: {fileID: 2925515703016736549}
   - component: {fileID: 2086439245290615750}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Fill
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -271,7 +287,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2323175063369490542}
   - component: {fileID: 1951390661481778274}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -360,7 +376,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3905779505262313548}
   - component: {fileID: 6234092269664254590}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -445,7 +461,7 @@ GameObject:
   - component: {fileID: 7187485169674293863}
   - component: {fileID: 8943269935029341747}
   - component: {fileID: 5540418225708590804}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
