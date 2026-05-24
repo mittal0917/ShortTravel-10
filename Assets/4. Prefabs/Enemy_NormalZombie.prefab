@@ -147,8 +147,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6361429700909125280}
-  - component: {fileID: 7250849543621179048}
-  - component: {fileID: -4789016431916226068}
+  - component: {fileID: 121498665474503053}
   m_Layer: 0
   m_Name: Enemy_NormalZombie
   m_TagString: Untagged
@@ -173,21 +172,7 @@ Transform:
   - {fileID: 368917639653648692}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7250849543621179048
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4977323317136520062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fa8adc247cf14b4aa3a0e88b6250b0a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  health: 100
-  moveSpeed: 3
---- !u!114 &-4789016431916226068
+--- !u!114 &121498665474503053
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
