@@ -15,8 +15,6 @@ public class UI_Game : MonoBehaviour
             return;
         }
 
-        GameSessionManager.EnsureExistsInScene();
-
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas != null && canvas.GetComponent<UI_Game>() == null)
         {
@@ -33,14 +31,12 @@ public class UI_Game : MonoBehaviour
 
     void Awake()
     {
-        GameSessionManager.EnsureExistsInScene();
         ResolveSettingsPanel();
         BindButtons();
     }
 
     void Start()
     {
-        GameSessionManager.EnsureExistsInScene();
         ResolveSettingsPanel();
         BindButtons();
 
