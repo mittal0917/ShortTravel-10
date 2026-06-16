@@ -6,9 +6,19 @@ public class character_move : MonoBehaviour
     public float moveSpeed = 5f;
 
     private Rigidbody2D rb;
+    private PlayerStatus playerStatus;
     private Vector2 moveInput;
     private float saveTimer;
     private bool hasStarted;
+
+    void Awake()
+    {
+        playerStatus = GetComponent<PlayerStatus>();
+        if (playerStatus == null)
+        {
+            playerStatus = gameObject.AddComponent<PlayerStatus>();
+        }
+    }
 
     void Start()
     {
@@ -70,7 +80,7 @@ public class character_move : MonoBehaviour
 
     public void SaveCurrentPosition()
     {
-        if (!hasStarted)
+        if (!hasStarted || GameSessionManager.IsGameEnding)
         {
             return;
         }
