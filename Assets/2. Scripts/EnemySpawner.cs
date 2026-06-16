@@ -27,8 +27,8 @@ public class EnemySpawner : MonoBehaviour
         Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
         Vector3 spawnPosition = new Vector3(
             transform.position.x + randomCircle.x,
-            transform.position.y, // 지면 높이에 맞게 조절
-            transform.position.z + randomCircle.y
+            transform.position.y + randomCircle.y,
+            0f
         );
 
         // 적 생성

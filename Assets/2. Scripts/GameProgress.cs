@@ -61,5 +61,6 @@ public static class GameProgress
         PlayerPrefs.DeleteKey(SavedKey);
         PlayerPrefs.DeleteKey(PlayerXKey);
         PlayerPrefs.DeleteKey(PlayerYKey);
+        PlayerPrefs.Save();
     }
 }
