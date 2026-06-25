@@ -3,15 +3,20 @@ using UnityEngine;
 public class Enemy_NormalZombie : MonoBehaviour
 {
     [Header("Stats")]
-    [SerializeField] private float health = 100f;
+    [SerializeField] private float health = 5f;
     [SerializeField] private float moveSpeed = 3f;
+    [SerializeField] private int maxHealthSlots = 5;
 
     private Rigidbody2D rb;
     private CircleCollider2D hitCollider;
     private Transform playerTarget;
+    private Transform healthBarRoot;
+    private SpriteRenderer[] healthSlots;
 
     void Awake()
     {
+        maxHealthSlots = Mathf.Max(1, maxHealthSlots);
+
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
         {
@@ -33,6 +38,8 @@ public class Enemy_NormalZombie : MonoBehaviour
     void Start()
     {
         FindPlayerTarget();
+        CreateHealthSlots();
+        RefreshHealthSlots();
     }
 
     void FixedUpdate()
@@ -43,11 +50,32 @@ public class Enemy_NormalZombie : MonoBehaviour
     public void TakeDamage(float damage)
     {
         health -= damage;
+        RefreshHealthSlots();
 
         if (health <= 0f)
         {
             Die();
         }
+    }
+
+    public void TakeDamage(float damage, Vector2 knockbackDirection, float knockbackTiles)
+    {
+        health -= damage;
+        RefreshHealthSlots();
+
+        if (health <= 0f)
+        {
+            Die();
+            return;
+        }
+
+        if (rb == null || knockbackTiles <= 0f)
+        {
+            return;
+        }
+
+        Vector2 direction = knockbackDirection.sqrMagnitude > 0.001f ? knockbackDirection.normalized : Vector2.zero;
+        rb.position += direction * knockbackTiles;
     }
 
     private void Die()
@@ -74,6 +102,71 @@ public class Enemy_NormalZombie : MonoBehaviour
     {
         character_move player = FindObjectOfType<character_move>();
         playerTarget = player != null ? player.transform : null;
+    }
+
+    private void CreateHealthSlots()
+    {
+        if (healthBarRoot != null)
+        {
+            return;
+        }
+
+        GameObject root = new GameObject("HealthSlots");
+        root.transform.SetParent(transform, false);
+        root.transform.localPosition = new Vector3(0f, 0.72f, 0f);
+        healthBarRoot = root.transform;
+
+        healthSlots = new SpriteRenderer[maxHealthSlots];
+        Sprite slotSprite = BuildSlotSprite();
+        float spacing = 0.16f;
+        float startX = -(maxHealthSlots - 1) * spacing * 0.5f;
+
+        for (int i = 0; i < maxHealthSlots; i++)
+        {
+            GameObject slot = new GameObject("HealthSlot");
+            slot.transform.SetParent(healthBarRoot, false);
+            slot.transform.localPosition = new Vector3(startX + i * spacing, 0f, 0f);
+            slot.transform.localScale = new Vector3(0.12f, 0.12f, 1f);
+
+            SpriteRenderer renderer = slot.AddComponent<SpriteRenderer>();
+            renderer.sprite = slotSprite;
+            renderer.sortingOrder = 20;
+            healthSlots[i] = renderer;
+        }
+    }
+
+    private void RefreshHealthSlots()
+    {
+        if (healthSlots == null)
+        {
+            return;
+        }
+
+        int activeSlots = Mathf.CeilToInt(Mathf.Clamp(health, 0f, maxHealthSlots));
+        for (int i = 0; i < healthSlots.Length; i++)
+        {
+            healthSlots[i].color = i < activeSlots
+                ? new Color(0.9f, 0.05f, 0.05f, 1f)
+                : new Color(0.12f, 0.12f, 0.12f, 0.45f);
+        }
+    }
+
+    private static Sprite BuildSlotSprite()
+    {
+        const int size = 16;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.filterMode = FilterMode.Point;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                texture.SetPixel(x, y, Color.white);
+            }
+        }
+
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
     }
 
     void OnCollisionStay2D(Collision2D collision)
