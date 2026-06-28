@@ -7,9 +7,13 @@ public class character_move : MonoBehaviour
 
     private Rigidbody2D rb;
     private PlayerStatus playerStatus;
+    private PlayerAttack playerAttack;
     private Vector2 moveInput;
+    private Vector2 facingDirection = Vector2.down;
     private float saveTimer;
     private bool hasStarted;
+
+    public Vector2 FacingDirection => facingDirection;
 
     void Awake()
     {
@@ -17,6 +21,12 @@ public class character_move : MonoBehaviour
         if (playerStatus == null)
         {
             playerStatus = gameObject.AddComponent<PlayerStatus>();
+        }
+
+        playerAttack = GetComponent<PlayerAttack>();
+        if (playerAttack == null)
+        {
+            playerAttack = gameObject.AddComponent<PlayerAttack>();
         }
     }
 
@@ -40,6 +50,10 @@ public class character_move : MonoBehaviour
         float y = Input.GetAxisRaw("Vertical");
 
         moveInput = new Vector2(x, y).normalized;
+        if (moveInput.sqrMagnitude > 0.001f)
+        {
+            facingDirection = moveInput;
+        }
 
         saveTimer += Time.deltaTime;
         if (saveTimer >= 0.5f)
