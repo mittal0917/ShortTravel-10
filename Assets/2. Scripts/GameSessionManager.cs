@@ -68,6 +68,7 @@ public class GameSessionManager : MonoBehaviour
         player = FindObjectOfType<character_move>();
         mapGenerator = FindObjectOfType<Map_Generator>();
         EnsureEnemyDirector();
+        EnsureItemSpawner();
         CreateTimerUi();
         UpdateTimerText();
     }
@@ -105,11 +106,41 @@ public class GameSessionManager : MonoBehaviour
     public void SetSupplyProgress(int currentCount)
     {
         carriedSupplyCount = currentCount;
+        ApplySupplyDifficulty();
     }
 
     public void SetRequiredSupplyCount(int requiredCount)
     {
         requiredSupplyCount = requiredCount;
+    }
+
+    public void RegisterSupplyCollected()
+    {
+        carriedSupplyCount++;
+        ApplySupplyDifficulty();
+        GrantSupplyAmmo();
+    }
+
+    private void ApplySupplyDifficulty()
+    {
+        if (enemyDirector == null)
+        {
+            EnsureEnemyDirector();
+        }
+
+        if (enemyDirector != null)
+        {
+            enemyDirector.ApplySupplyCount(carriedSupplyCount);
+        }
+    }
+
+    private void GrantSupplyAmmo()
+    {
+        PlayerAttack playerAttack = FindObjectOfType<PlayerAttack>();
+        if (playerAttack != null)
+        {
+            playerAttack.AddAmmoFromSupply();
+        }
     }
 
     private void UpdateEscapeState()
@@ -233,5 +264,16 @@ public class GameSessionManager : MonoBehaviour
 
         GameObject directorObject = new GameObject("EnemyDirector");
         enemyDirector = directorObject.AddComponent<EnemyDirector>();
+    }
+
+    private void EnsureItemSpawner()
+    {
+        if (FindObjectOfType<ItemSpawner>() != null)
+        {
+            return;
+        }
+
+        GameObject spawnerObject = new GameObject("ItemSpawner");
+        spawnerObject.AddComponent<ItemSpawner>();
     }
 }

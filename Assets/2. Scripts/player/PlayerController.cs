@@ -21,10 +21,16 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 moveInput;
     private Rigidbody2D rb;
+    private PlayerAttack playerAttack;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        playerAttack = GetComponent<PlayerAttack>();
+        if (playerAttack == null)
+        {
+            playerAttack = gameObject.AddComponent<PlayerAttack>();
+        }
     }
 
     void Update()
@@ -102,6 +108,12 @@ public class PlayerController : MonoBehaviour
     public void AddSupply()
     {
         currentSupplies++;
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.RegisterSupplyCollected();
+            GameSessionManager.Instance.SetRequiredSupplyCount(targetSupplies);
+        }
+
         Debug.Log($"물자 획득! 현재 물자: {currentSupplies} / {targetSupplies}");
 
         if (currentSupplies >= targetSupplies)
