@@ -22,7 +22,14 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private float pistolAttackIntervalSeconds = 3f;
     [SerializeField] private float pistolDamage = 3f;
     [SerializeField] private float pistolPickupRangeTiles = 1f;
+    [SerializeField] private float bulletVisualSpeed = 14f;
+    [SerializeField] private float bulletVisualLifetimeSeconds = 0.5f;
     [SerializeField] private Vector2 defaultPistolSpawnOffset = new Vector2(3f, 0f);
+
+    [Header("Ammo")]
+    [SerializeField] private int startingAmmo = 50;
+    [SerializeField] private int maxAmmo = 120;
+    [SerializeField] private int supplyAmmoBonus = 50;
 
     private character_move movement;
     private WeaponType currentWeapon = WeaponType.Bat;
@@ -33,6 +40,9 @@ public class PlayerAttack : MonoBehaviour
     private MeshFilter batSweepFilter;
     private GameObject pistolPickup;
     private Collider2D playerCollider;
+    private TextMesh ammoText;
+    private MeshRenderer ammoTextRenderer;
+    private int currentAmmo;
     private float nextAttackTime;
     private bool isSwinging;
 
@@ -40,7 +50,9 @@ public class PlayerAttack : MonoBehaviour
     {
         movement = GetComponent<character_move>();
         playerCollider = GetComponent<Collider2D>();
+        currentAmmo = Mathf.Clamp(startingAmmo, 0, maxAmmo);
         CreateWeaponVisuals();
+        CreateAmmoText();
     }
 
     IEnumerator Start()
@@ -113,15 +125,30 @@ public class PlayerAttack : MonoBehaviour
 
     private bool TryPistolAttack()
     {
+        if (currentAmmo <= 0)
+        {
+            UpdateAmmoText();
+            return false;
+        }
+
         Enemy_NormalZombie target = FindClosestEnemy(pistolRangeTiles);
         if (target == null)
         {
             return false;
         }
 
+        currentAmmo--;
+        UpdateAmmoText();
+        SpawnBulletVisual(target.transform.position);
         target.TakeDamage(pistolDamage);
         StartCoroutine(FlashPistol());
         return true;
+    }
+
+    public void AddAmmoFromSupply()
+    {
+        currentAmmo = Mathf.Min(maxAmmo, currentAmmo + supplyAmmoBonus);
+        UpdateAmmoText();
     }
 
     private Enemy_NormalZombie FindClosestEnemy(float range)
@@ -168,6 +195,7 @@ public class PlayerAttack : MonoBehaviour
         currentWeapon = WeaponType.Bat;
         batRenderer.enabled = true;
         pistolRenderer.enabled = false;
+        UpdateAmmoText();
     }
 
     private void EquipPistol()
@@ -176,6 +204,7 @@ public class PlayerAttack : MonoBehaviour
         batRenderer.enabled = false;
         pistolRenderer.enabled = true;
         nextAttackTime = 0f;
+        UpdateAmmoText();
     }
 
     private float GetAttackInterval()
@@ -221,6 +250,41 @@ public class PlayerAttack : MonoBehaviour
         pistolRenderer.transform.localScale = new Vector3(0.35f, 0.18f, 1f);
 
         CreateBatSweepVisual();
+    }
+
+    private void CreateAmmoText()
+    {
+        GameObject textObject = new GameObject("AmmoText");
+        textObject.transform.SetParent(transform, false);
+        textObject.transform.localPosition = new Vector3(0f, -0.95f, 0f);
+
+        ammoText = textObject.AddComponent<TextMesh>();
+        ammoText.anchor = TextAnchor.MiddleCenter;
+        ammoText.alignment = TextAlignment.Center;
+        ammoText.characterSize = 0.16f;
+        ammoText.fontSize = 42;
+        ammoText.color = Color.white;
+
+        ammoTextRenderer = textObject.GetComponent<MeshRenderer>();
+        if (ammoTextRenderer != null)
+        {
+            ammoTextRenderer.sortingOrder = 30;
+        }
+
+        UpdateAmmoText();
+    }
+
+    private void UpdateAmmoText()
+    {
+        if (ammoText != null)
+        {
+            ammoText.text = currentAmmo.ToString();
+        }
+
+        if (ammoTextRenderer != null)
+        {
+            ammoTextRenderer.enabled = currentWeapon == WeaponType.Pistol;
+        }
     }
 
     private SpriteRenderer CreateChildRenderer(string objectName, Sprite sprite, Color color, int sortingOrder)
@@ -354,6 +418,47 @@ public class PlayerAttack : MonoBehaviour
         pistolRenderer.color = new Color(1f, 0.9f, 0.35f, 1f);
         yield return new WaitForSeconds(0.08f);
         pistolRenderer.color = originalColor;
+    }
+
+    private void SpawnBulletVisual(Vector3 targetPosition)
+    {
+        Vector2 direction = targetPosition - transform.position;
+        if (direction.sqrMagnitude <= 0.001f)
+        {
+            direction = GetFacingDirection();
+        }
+        else
+        {
+            direction.Normalize();
+        }
+
+        GameObject bulletObject = new GameObject("Bullet_Visual");
+        bulletObject.transform.position = transform.position + (Vector3)(direction * 0.55f);
+        bulletObject.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+
+        SpriteRenderer renderer = bulletObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = BuildRectSprite(18, 6);
+        renderer.color = new Color(1f, 0.92f, 0.2f, 1f);
+        renderer.sortingOrder = 25;
+
+        bulletObject.transform.localScale = new Vector3(0.35f, 0.35f, 1f);
+        StartCoroutine(MoveBulletVisual(bulletObject, direction));
+    }
+
+    private IEnumerator MoveBulletVisual(GameObject bulletObject, Vector2 direction)
+    {
+        float elapsed = 0f;
+        while (bulletObject != null && elapsed < bulletVisualLifetimeSeconds)
+        {
+            elapsed += Time.deltaTime;
+            bulletObject.transform.position += (Vector3)(direction * bulletVisualSpeed * Time.deltaTime);
+            yield return null;
+        }
+
+        if (bulletObject != null)
+        {
+            Destroy(bulletObject);
+        }
     }
 
     private void EnsurePistolPickupExists()

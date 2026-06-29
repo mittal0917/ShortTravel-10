@@ -12,10 +12,12 @@ public class Enemy_NormalZombie : MonoBehaviour
     private Transform playerTarget;
     private Transform healthBarRoot;
     private SpriteRenderer[] healthSlots;
+    private int configuredHealthSlots;
 
     void Awake()
     {
         maxHealthSlots = Mathf.Max(1, maxHealthSlots);
+        configuredHealthSlots = maxHealthSlots;
 
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
@@ -78,6 +80,32 @@ public class Enemy_NormalZombie : MonoBehaviour
         rb.position += direction * knockbackTiles;
     }
 
+    public void ConfigureHealthSlots(int healthSlotsCount, bool refillHealth)
+    {
+        int newHealthSlots = Mathf.Max(1, healthSlotsCount);
+        if (newHealthSlots == maxHealthSlots && healthSlots != null)
+        {
+            if (refillHealth)
+            {
+                health = maxHealthSlots;
+                RefreshHealthSlots();
+            }
+
+            return;
+        }
+
+        maxHealthSlots = newHealthSlots;
+        configuredHealthSlots = newHealthSlots;
+
+        if (refillHealth || health > maxHealthSlots)
+        {
+            health = maxHealthSlots;
+        }
+
+        RebuildHealthSlots();
+        RefreshHealthSlots();
+    }
+
     private void Die()
     {
         Destroy(gameObject);
@@ -106,11 +134,12 @@ public class Enemy_NormalZombie : MonoBehaviour
 
     private void CreateHealthSlots()
     {
-        if (healthBarRoot != null)
+        if (healthBarRoot != null && healthSlots != null && configuredHealthSlots == maxHealthSlots)
         {
             return;
         }
 
+        configuredHealthSlots = maxHealthSlots;
         GameObject root = new GameObject("HealthSlots");
         root.transform.SetParent(transform, false);
         root.transform.localPosition = new Vector3(0f, 0.72f, 0f);
@@ -133,6 +162,18 @@ public class Enemy_NormalZombie : MonoBehaviour
             renderer.sortingOrder = 20;
             healthSlots[i] = renderer;
         }
+    }
+
+    private void RebuildHealthSlots()
+    {
+        if (healthBarRoot != null)
+        {
+            Destroy(healthBarRoot.gameObject);
+            healthBarRoot = null;
+            healthSlots = null;
+        }
+
+        CreateHealthSlots();
     }
 
     private void RefreshHealthSlots()

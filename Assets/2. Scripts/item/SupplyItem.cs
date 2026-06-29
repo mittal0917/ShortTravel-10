@@ -5,6 +5,7 @@ public class SupplyItem : MonoBehaviour
     public float flySpeed = 8f;
     private Transform targetPlayer;
     private bool isFlying = false;
+    private bool isCollected;
 
     public void StartMagnet(Transform playerTransform)
     {
@@ -23,12 +24,41 @@ public class SupplyItem : MonoBehaviour
             // 완전히 근접하면 획득 처리
             if (Vector2.Distance(transform.position, targetPlayer.position) < 0.2f)
             {
-                if (targetPlayer.TryGetComponent<PlayerController>(out var player))
-                {
-                    player.AddSupply();
-                }
-                Destroy(gameObject);
+                Collect(targetPlayer);
             }
         }
+    }
+
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        Collect(collision.transform);
+    }
+
+    private void Collect(Transform collector)
+    {
+        if (isCollected || collector == null)
+        {
+            return;
+        }
+
+        PlayerController player = collector.GetComponentInParent<PlayerController>();
+        character_move legacyPlayer = collector.GetComponentInParent<character_move>();
+        if (player == null && legacyPlayer == null)
+        {
+            return;
+        }
+
+        isCollected = true;
+
+        if (player != null)
+        {
+            player.AddSupply();
+        }
+        else if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.RegisterSupplyCollected();
+        }
+
+        Destroy(gameObject);
     }
 }

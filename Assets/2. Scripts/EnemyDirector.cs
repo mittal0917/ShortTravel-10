@@ -8,9 +8,24 @@ public class EnemyDirector : MonoBehaviour
     [SerializeField] private float spawnMarginFromEdge = 8f;
     [SerializeField] private float minDistanceFromPlayer = 6f;
 
+    [Header("Supply Scaling")]
+    [SerializeField] private int suppliesPerDifficultyLevel = 3;
+    [SerializeField] private int maxDifficultyLevel = 6;
+    [SerializeField] private int baseZombieHealthSlots = 5;
+    [SerializeField] private float spawnIntervalDecreasePerLevel = 0.5f;
+    [SerializeField] private float minimumSpawnIntervalSeconds = 3f;
+    [SerializeField] private bool refillExistingZombieHealthOnLevelUp = true;
+
     private character_move player;
     private Map_Generator mapGenerator;
+    private float baseSpawnIntervalSeconds;
     private float spawnTimer;
+    private int difficultyLevel;
+
+    void Awake()
+    {
+        baseSpawnIntervalSeconds = spawnIntervalSeconds;
+    }
 
     void Start()
     {
@@ -21,6 +36,26 @@ public class EnemyDirector : MonoBehaviour
         {
             SpawnEnemy();
         }
+    }
+
+    public void ApplySupplyCount(int supplyCount)
+    {
+        int nextDifficultyLevel = Mathf.Clamp(
+            supplyCount / Mathf.Max(1, suppliesPerDifficultyLevel),
+            0,
+            maxDifficultyLevel);
+        if (nextDifficultyLevel == difficultyLevel)
+        {
+            return;
+        }
+
+        difficultyLevel = nextDifficultyLevel;
+        spawnIntervalSeconds = Mathf.Max(
+            minimumSpawnIntervalSeconds,
+            baseSpawnIntervalSeconds - difficultyLevel * spawnIntervalDecreasePerLevel);
+
+        ApplyZombieHealthToExistingEnemies();
+        Debug.Log($"좀비 강화 단계 {difficultyLevel}: 스폰 {spawnIntervalSeconds:0.0}초, 체력 {GetCurrentZombieHealthSlots()}칸");
     }
 
     void Update()
@@ -60,7 +95,25 @@ public class EnemyDirector : MonoBehaviour
         renderer.sortingOrder = 10;
         enemyObject.transform.localScale = new Vector3(0.9f, 0.9f, 1f);
 
-        enemyObject.AddComponent<Enemy_NormalZombie>();
+        Enemy_NormalZombie zombie = enemyObject.AddComponent<Enemy_NormalZombie>();
+        zombie.ConfigureHealthSlots(GetCurrentZombieHealthSlots(), true);
+    }
+
+    private int GetCurrentZombieHealthSlots()
+    {
+        return baseZombieHealthSlots + difficultyLevel;
+    }
+
+    private void ApplyZombieHealthToExistingEnemies()
+    {
+        Enemy_NormalZombie[] enemies = FindObjectsOfType<Enemy_NormalZombie>();
+        foreach (Enemy_NormalZombie enemy in enemies)
+        {
+            if (enemy != null)
+            {
+                enemy.ConfigureHealthSlots(GetCurrentZombieHealthSlots(), refillExistingZombieHealthOnLevelUp);
+            }
+        }
     }
 
     private Vector3 FindSpawnPosition()
