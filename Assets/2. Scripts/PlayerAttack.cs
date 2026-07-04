@@ -36,6 +36,9 @@ public class PlayerAttack : MonoBehaviour
     private Transform weaponPivot;
     private SpriteRenderer batRenderer;
     private SpriteRenderer pistolRenderer;
+    private Sprite batSprite;
+    private Sprite pistolSprite;
+    private Sprite bulletSprite;
     private MeshRenderer batSweepRenderer;
     private MeshFilter batSweepFilter;
     private GameObject pistolPickup;
@@ -193,7 +196,7 @@ public class PlayerAttack : MonoBehaviour
     private void EquipBat()
     {
         currentWeapon = WeaponType.Bat;
-        batRenderer.enabled = true;
+        batRenderer.enabled = false;
         pistolRenderer.enabled = false;
         UpdateAmmoText();
     }
@@ -202,7 +205,7 @@ public class PlayerAttack : MonoBehaviour
     {
         currentWeapon = WeaponType.Pistol;
         batRenderer.enabled = false;
-        pistolRenderer.enabled = true;
+        pistolRenderer.enabled = false;
         nextAttackTime = 0f;
         UpdateAmmoText();
     }
@@ -241,13 +244,17 @@ public class PlayerAttack : MonoBehaviour
         pivot.transform.localPosition = Vector3.zero;
         weaponPivot = pivot.transform;
 
-        batRenderer = CreateChildRenderer("Bat", BuildRectSprite(8, 40), new Color(0.55f, 0.32f, 0.14f, 1f), 12);
-        batRenderer.transform.localPosition = new Vector3(0f, -0.45f, 0f);
-        batRenderer.transform.localScale = new Vector3(0.16f, 0.55f, 1f);
+        batSprite = WeaponSpriteLibrary.CreateBatSprite();
+        pistolSprite = WeaponSpriteLibrary.CreatePistolSprite();
+        bulletSprite = WeaponSpriteLibrary.CreateBulletSprite();
 
-        pistolRenderer = CreateChildRenderer("Pistol", BuildRectSprite(28, 14), new Color(0.12f, 0.12f, 0.14f, 1f), 12);
+        batRenderer = CreateChildRenderer("Bat", batSprite != null ? batSprite : BuildRectSprite(8, 40), Color.white, 12);
+        batRenderer.transform.localPosition = new Vector3(0f, -0.45f, 0f);
+        batRenderer.transform.localScale = batSprite != null ? new Vector3(0.7f, 0.7f, 1f) : new Vector3(0.16f, 0.55f, 1f);
+
+        pistolRenderer = CreateChildRenderer("Pistol", pistolSprite != null ? pistolSprite : BuildRectSprite(28, 14), Color.white, 12);
         pistolRenderer.transform.localPosition = new Vector3(0f, -0.42f, 0f);
-        pistolRenderer.transform.localScale = new Vector3(0.35f, 0.18f, 1f);
+        pistolRenderer.transform.localScale = pistolSprite != null ? new Vector3(0.8f, 0.8f, 1f) : new Vector3(0.35f, 0.18f, 1f);
 
         CreateBatSweepVisual();
     }
@@ -319,8 +326,9 @@ public class PlayerAttack : MonoBehaviour
         float elapsed = 0f;
         float duration = batSwingDurationSeconds;
 
+        batRenderer.enabled = true;
         batRenderer.transform.localPosition = new Vector3(0f, -0.75f, 0f);
-        batRenderer.transform.localScale = new Vector3(0.2f, 0.85f, 1f);
+        batRenderer.transform.localScale = batSprite != null ? new Vector3(0.95f, 0.95f, 1f) : new Vector3(0.2f, 0.85f, 1f);
         ShowBatSweep(baseAngle);
 
         while (elapsed < duration)
@@ -333,14 +341,15 @@ public class PlayerAttack : MonoBehaviour
 
             weaponPivot.localRotation = Quaternion.Euler(0f, 0f, baseAngle + swingAngle);
             weaponPivot.localPosition = forward * (0.45f + scalePulse * 0.25f);
-            batRenderer.color = Color.Lerp(new Color(0.55f, 0.32f, 0.14f, 1f), new Color(1f, 0.78f, 0.38f, 1f), scalePulse);
+            batRenderer.color = Color.Lerp(Color.white, new Color(1f, 0.78f, 0.38f, 1f), scalePulse);
             yield return null;
         }
 
         HideBatSweep();
-        batRenderer.color = new Color(0.55f, 0.32f, 0.14f, 1f);
+        batRenderer.color = Color.white;
         batRenderer.transform.localPosition = new Vector3(0f, -0.45f, 0f);
-        batRenderer.transform.localScale = new Vector3(0.16f, 0.55f, 1f);
+        batRenderer.transform.localScale = batSprite != null ? new Vector3(0.7f, 0.7f, 1f) : new Vector3(0.16f, 0.55f, 1f);
+        batRenderer.enabled = false;
         isSwinging = false;
     }
 
@@ -414,10 +423,12 @@ public class PlayerAttack : MonoBehaviour
 
     private IEnumerator FlashPistol()
     {
+        pistolRenderer.enabled = true;
         Color originalColor = pistolRenderer.color;
         pistolRenderer.color = new Color(1f, 0.9f, 0.35f, 1f);
         yield return new WaitForSeconds(0.08f);
         pistolRenderer.color = originalColor;
+        pistolRenderer.enabled = false;
     }
 
     private void SpawnBulletVisual(Vector3 targetPosition)
@@ -437,11 +448,11 @@ public class PlayerAttack : MonoBehaviour
         bulletObject.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
 
         SpriteRenderer renderer = bulletObject.AddComponent<SpriteRenderer>();
-        renderer.sprite = BuildRectSprite(18, 6);
-        renderer.color = new Color(1f, 0.92f, 0.2f, 1f);
+        renderer.sprite = bulletSprite != null ? bulletSprite : BuildRectSprite(18, 6);
+        renderer.color = bulletSprite != null ? Color.white : new Color(1f, 0.92f, 0.2f, 1f);
         renderer.sortingOrder = 25;
 
-        bulletObject.transform.localScale = new Vector3(0.35f, 0.35f, 1f);
+        bulletObject.transform.localScale = bulletSprite != null ? new Vector3(0.75f, 0.75f, 1f) : new Vector3(0.35f, 0.35f, 1f);
         StartCoroutine(MoveBulletVisual(bulletObject, direction));
     }
 
@@ -473,9 +484,10 @@ public class PlayerAttack : MonoBehaviour
         pistolPickup.transform.position = transform.position + (Vector3)defaultPistolSpawnOffset;
 
         SpriteRenderer renderer = pistolPickup.AddComponent<SpriteRenderer>();
-        renderer.sprite = BuildRectSprite(28, 14);
-        renderer.color = new Color(0.08f, 0.08f, 0.1f, 1f);
+        renderer.sprite = pistolSprite != null ? pistolSprite : BuildRectSprite(28, 14);
+        renderer.color = pistolSprite != null ? Color.white : new Color(0.08f, 0.08f, 0.1f, 1f);
         renderer.sortingOrder = 8;
+        pistolPickup.transform.localScale = pistolSprite != null ? new Vector3(0.9f, 0.9f, 1f) : Vector3.one;
 
         CircleCollider2D trigger = pistolPickup.AddComponent<CircleCollider2D>();
         trigger.isTrigger = true;

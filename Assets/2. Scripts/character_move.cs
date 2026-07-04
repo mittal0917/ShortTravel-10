@@ -8,6 +8,7 @@ public class character_move : MonoBehaviour
     private Rigidbody2D rb;
     private PlayerStatus playerStatus;
     private PlayerAttack playerAttack;
+    private SpriteSheetCharacterAnimator spriteAnimator;
     private Vector2 moveInput;
     private Vector2 facingDirection = Vector2.down;
     private float saveTimer;
@@ -28,6 +29,14 @@ public class character_move : MonoBehaviour
         {
             playerAttack = gameObject.AddComponent<PlayerAttack>();
         }
+
+        spriteAnimator = GetComponent<SpriteSheetCharacterAnimator>();
+        if (spriteAnimator == null)
+        {
+            spriteAnimator = gameObject.AddComponent<SpriteSheetCharacterAnimator>();
+        }
+
+        spriteAnimator.ConfigureForPlayer();
     }
 
     void Start()

@@ -1,17 +1,22 @@
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Collections.Generic;
 
 public class ItemSpawner : MonoBehaviour
 {
     public GameObject Supply;
     [FormerlySerializedAs("gunCount")]
-    public int supplyCount = 20;
+    public int supplyCount = 28;
 
     public Vector2 minPos;
     public Vector2 maxPos;
+    [SerializeField] private float mapEdgeMargin = 5f;
+    [SerializeField] private float minDistanceFromPlayer = 8f;
+    [SerializeField] private float minDistanceBetweenSupplies = 4f;
 
     private character_move player;
     private Map_Generator mapGenerator;
+    private readonly List<Vector2> spawnedPositions = new List<Vector2>();
 
     void Start()
     {
@@ -32,27 +37,25 @@ public class ItemSpawner : MonoBehaviour
             return;
         }
 
-        if (player != null)
+        if (mapGenerator != null)
         {
-            Vector2 playerPosition = player.transform.position;
-            minPos = playerPosition - new Vector2(18f, 18f);
-            maxPos = playerPosition + new Vector2(18f, 18f);
-
-            if (mapGenerator != null)
-            {
-                minPos = new Vector2(
-                    Mathf.Clamp(minPos.x, 4f, mapGenerator.mapWidth - 4f),
-                    Mathf.Clamp(minPos.y, 4f, mapGenerator.mapHeight - 4f));
-                maxPos = new Vector2(
-                    Mathf.Clamp(maxPos.x, 4f, mapGenerator.mapWidth - 4f),
-                    Mathf.Clamp(maxPos.y, 4f, mapGenerator.mapHeight - 4f));
-            }
-
+            minPos = new Vector2(mapEdgeMargin, mapEdgeMargin);
+            maxPos = new Vector2(
+                Mathf.Max(mapEdgeMargin + 1f, mapGenerator.mapWidth - mapEdgeMargin),
+                Mathf.Max(mapEdgeMargin + 1f, mapGenerator.mapHeight - mapEdgeMargin));
             return;
         }
 
-        minPos = new Vector2(-12f, -12f);
-        maxPos = new Vector2(12f, 12f);
+        if (player != null)
+        {
+            Vector2 playerPosition = player.transform.position;
+            minPos = playerPosition - new Vector2(28f, 28f);
+            maxPos = playerPosition + new Vector2(28f, 28f);
+            return;
+        }
+
+        minPos = new Vector2(-24f, -24f);
+        maxPos = new Vector2(24f, 24f);
     }
 
     private void SpawnSupply()
@@ -63,17 +66,18 @@ public class ItemSpawner : MonoBehaviour
             : CreateRuntimeSupply(randomPos);
 
         supplyObject.name = "Supply";
+        spawnedPositions.Add(randomPos);
     }
 
     private Vector2 FindSpawnPosition()
     {
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 80; i++)
         {
             Vector2 candidate = new Vector2(
                 Random.Range(minPos.x, maxPos.x),
                 Random.Range(minPos.y, maxPos.y));
 
-            if (player == null || Vector2.Distance(candidate, player.transform.position) >= 5f)
+            if (IsValidSupplyPosition(candidate))
             {
                 return candidate;
             }
@@ -88,8 +92,8 @@ public class ItemSpawner : MonoBehaviour
         supplyObject.transform.position = position;
 
         SpriteRenderer renderer = supplyObject.AddComponent<SpriteRenderer>();
-        renderer.sprite = BuildSquareSprite();
-        renderer.color = new Color(0.95f, 0.78f, 0.18f, 1f);
+        renderer.sprite = SupplyVisuals.GetSupplySprite();
+        renderer.color = Color.white;
         renderer.sortingOrder = 9;
 
         BoxCollider2D collider = supplyObject.AddComponent<BoxCollider2D>();
@@ -100,21 +104,21 @@ public class ItemSpawner : MonoBehaviour
         return supplyObject;
     }
 
-    private static Sprite BuildSquareSprite()
+    private bool IsValidSupplyPosition(Vector2 candidate)
     {
-        const int size = 32;
-        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        texture.filterMode = FilterMode.Point;
-
-        for (int x = 0; x < size; x++)
+        if (player != null && Vector2.Distance(candidate, player.transform.position) < minDistanceFromPlayer)
         {
-            for (int y = 0; y < size; y++)
+            return false;
+        }
+
+        foreach (Vector2 position in spawnedPositions)
+        {
+            if (Vector2.Distance(candidate, position) < minDistanceBetweenSupplies)
             {
-                texture.SetPixel(x, y, Color.white);
+                return false;
             }
         }
 
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+        return true;
     }
 }

@@ -70,6 +70,7 @@ public class GameSessionManager : MonoBehaviour
         EnsureEnemyDirector();
         EnsureItemSpawner();
         CreateTimerUi();
+        SyncSupplyUi();
         UpdateTimerText();
     }
 
@@ -107,11 +108,13 @@ public class GameSessionManager : MonoBehaviour
     {
         carriedSupplyCount = currentCount;
         ApplySupplyDifficulty();
+        SyncSupplyUi();
     }
 
     public void SetRequiredSupplyCount(int requiredCount)
     {
         requiredSupplyCount = requiredCount;
+        SyncSupplyUi();
     }
 
     public void RegisterSupplyCollected()
@@ -119,6 +122,19 @@ public class GameSessionManager : MonoBehaviour
         carriedSupplyCount++;
         ApplySupplyDifficulty();
         GrantSupplyAmmo();
+        SyncSupplyUi();
+    }
+
+    private void SyncSupplyUi()
+    {
+        SupplyManager supplyManager = SupplyManager.Instance != null
+            ? SupplyManager.Instance
+            : FindObjectOfType<SupplyManager>();
+
+        if (supplyManager != null)
+        {
+            supplyManager.SetSupplyProgress(carriedSupplyCount, requiredSupplyCount > 0 ? requiredSupplyCount : 5);
+        }
     }
 
     private void ApplySupplyDifficulty()

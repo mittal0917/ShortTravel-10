@@ -12,7 +12,9 @@ public class Enemy_NormalZombie : MonoBehaviour
     private Transform playerTarget;
     private Transform healthBarRoot;
     private SpriteRenderer[] healthSlots;
+    private SpriteSheetCharacterAnimator spriteAnimator;
     private int configuredHealthSlots;
+    private bool isDead;
 
     void Awake()
     {
@@ -35,6 +37,14 @@ public class Enemy_NormalZombie : MonoBehaviour
         }
 
         hitCollider.radius = 0.45f;
+
+        spriteAnimator = GetComponent<SpriteSheetCharacterAnimator>();
+        if (spriteAnimator == null)
+        {
+            spriteAnimator = gameObject.AddComponent<SpriteSheetCharacterAnimator>();
+        }
+
+        spriteAnimator.ConfigureForZombie();
     }
 
     void Start()
@@ -51,6 +61,11 @@ public class Enemy_NormalZombie : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+        if (isDead)
+        {
+            return;
+        }
+
         health -= damage;
         RefreshHealthSlots();
 
@@ -62,6 +77,11 @@ public class Enemy_NormalZombie : MonoBehaviour
 
     public void TakeDamage(float damage, Vector2 knockbackDirection, float knockbackTiles)
     {
+        if (isDead)
+        {
+            return;
+        }
+
         health -= damage;
         RefreshHealthSlots();
 
@@ -106,13 +126,35 @@ public class Enemy_NormalZombie : MonoBehaviour
         RefreshHealthSlots();
     }
 
+    public void ConfigureMoveSpeed(float newMoveSpeed)
+    {
+        moveSpeed = Mathf.Max(0.1f, newMoveSpeed);
+    }
+
     private void Die()
     {
-        Destroy(gameObject);
+        isDead = true;
+
+        if (spriteAnimator != null)
+        {
+            spriteAnimator.PlayDeath();
+        }
+
+        if (hitCollider != null)
+        {
+            hitCollider.enabled = false;
+        }
+
+        Destroy(gameObject, 1.2f);
     }
 
     private void MoveTowardsPlayer()
     {
+        if (isDead)
+        {
+            return;
+        }
+
         if (playerTarget == null)
         {
             FindPlayerTarget();

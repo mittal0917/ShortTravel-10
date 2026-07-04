@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private Rigidbody2D rb;
     private PlayerAttack playerAttack;
+    private SpriteSheetCharacterAnimator spriteAnimator;
 
     void Start()
     {
@@ -31,6 +32,14 @@ public class PlayerController : MonoBehaviour
         {
             playerAttack = gameObject.AddComponent<PlayerAttack>();
         }
+
+        spriteAnimator = GetComponent<SpriteSheetCharacterAnimator>();
+        if (spriteAnimator == null)
+        {
+            spriteAnimator = gameObject.AddComponent<SpriteSheetCharacterAnimator>();
+        }
+
+        spriteAnimator.ConfigureForPlayer();
     }
 
     void Update()

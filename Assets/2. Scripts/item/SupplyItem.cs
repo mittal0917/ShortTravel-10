@@ -7,6 +7,12 @@ public class SupplyItem : MonoBehaviour
     private bool isFlying = false;
     private bool isCollected;
 
+    void Awake()
+    {
+        EnsureVisual();
+        EnsureCollider();
+    }
+
     public void StartMagnet(Transform playerTransform)
     {
         if (isFlying) return; // 이미 끌려가는 중이면 무시
@@ -59,6 +65,47 @@ public class SupplyItem : MonoBehaviour
             GameSessionManager.Instance.RegisterSupplyCollected();
         }
 
-        Destroy(gameObject);
+        Destroy(GetDestroyTarget());
+    }
+
+    private void EnsureVisual()
+    {
+        Sprite supplySprite = SupplyVisuals.GetSupplySprite();
+        if (supplySprite == null)
+        {
+            return;
+        }
+
+        SpriteRenderer renderer = GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            renderer = gameObject.AddComponent<SpriteRenderer>();
+        }
+
+        renderer.sprite = supplySprite;
+        renderer.color = Color.white;
+        renderer.sortingOrder = 9;
+    }
+
+    private void EnsureCollider()
+    {
+        BoxCollider2D collider = GetComponent<BoxCollider2D>();
+        if (collider == null)
+        {
+            collider = gameObject.AddComponent<BoxCollider2D>();
+        }
+
+        collider.isTrigger = true;
+        collider.size = Vector2.one;
+    }
+
+    private GameObject GetDestroyTarget()
+    {
+        if (transform.parent != null && transform.parent.name.Contains("Supply"))
+        {
+            return transform.parent.gameObject;
+        }
+
+        return gameObject;
     }
 }
