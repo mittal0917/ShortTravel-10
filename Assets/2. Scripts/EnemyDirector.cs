@@ -12,6 +12,8 @@ public class EnemyDirector : MonoBehaviour
     [SerializeField] private int suppliesPerDifficultyLevel = 3;
     [SerializeField] private int maxDifficultyLevel = 6;
     [SerializeField] private int baseZombieHealthSlots = 5;
+    [SerializeField] private float baseZombieMoveSpeed = 3f;
+    [SerializeField] private float zombieMoveSpeedIncreasePerLevel = 0.25f;
     [SerializeField] private float spawnIntervalDecreasePerLevel = 0.5f;
     [SerializeField] private float minimumSpawnIntervalSeconds = 3f;
     [SerializeField] private bool refillExistingZombieHealthOnLevelUp = true;
@@ -54,8 +56,8 @@ public class EnemyDirector : MonoBehaviour
             minimumSpawnIntervalSeconds,
             baseSpawnIntervalSeconds - difficultyLevel * spawnIntervalDecreasePerLevel);
 
-        ApplyZombieHealthToExistingEnemies();
-        Debug.Log($"좀비 강화 단계 {difficultyLevel}: 스폰 {spawnIntervalSeconds:0.0}초, 체력 {GetCurrentZombieHealthSlots()}칸");
+        ApplyZombieStatsToExistingEnemies();
+        Debug.Log($"좀비 강화 단계 {difficultyLevel}: 스폰 {spawnIntervalSeconds:0.0}초, 체력 {GetCurrentZombieHealthSlots()}칸, 속도 {GetCurrentZombieMoveSpeed():0.00}");
     }
 
     void Update()
@@ -93,6 +95,7 @@ public class EnemyDirector : MonoBehaviour
 
         Enemy_NormalZombie zombie = enemyObject.AddComponent<Enemy_NormalZombie>();
         zombie.ConfigureHealthSlots(GetCurrentZombieHealthSlots(), true);
+        zombie.ConfigureMoveSpeed(GetCurrentZombieMoveSpeed());
     }
 
     private int GetCurrentZombieHealthSlots()
@@ -100,7 +103,12 @@ public class EnemyDirector : MonoBehaviour
         return baseZombieHealthSlots + difficultyLevel;
     }
 
-    private void ApplyZombieHealthToExistingEnemies()
+    private float GetCurrentZombieMoveSpeed()
+    {
+        return baseZombieMoveSpeed + difficultyLevel * zombieMoveSpeedIncreasePerLevel;
+    }
+
+    private void ApplyZombieStatsToExistingEnemies()
     {
         Enemy_NormalZombie[] enemies = FindObjectsOfType<Enemy_NormalZombie>();
         foreach (Enemy_NormalZombie enemy in enemies)
@@ -108,6 +116,7 @@ public class EnemyDirector : MonoBehaviour
             if (enemy != null)
             {
                 enemy.ConfigureHealthSlots(GetCurrentZombieHealthSlots(), refillExistingZombieHealthOnLevelUp);
+                enemy.ConfigureMoveSpeed(GetCurrentZombieMoveSpeed());
             }
         }
     }

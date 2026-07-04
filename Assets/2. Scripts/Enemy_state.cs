@@ -126,6 +126,11 @@ public class Enemy_NormalZombie : MonoBehaviour
         RefreshHealthSlots();
     }
 
+    public void ConfigureMoveSpeed(float newMoveSpeed)
+    {
+        moveSpeed = Mathf.Max(0.1f, newMoveSpeed);
+    }
+
     private void Die()
     {
         isDead = true;
