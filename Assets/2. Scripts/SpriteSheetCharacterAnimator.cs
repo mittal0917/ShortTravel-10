@@ -35,7 +35,8 @@ public class SpriteSheetCharacterAnimator : MonoBehaviour
         pixelsPerUnit = 64f;
         framesPerSecond = 8f;
         sortingOrder = 5;
-        visualScale = Vector3.one;
+        // 새 맵 이미지의 오브젝트 밀도에 맞춰 플레이어가 화면에서 너무 작아 보이지 않도록 시각 크기만 키웁니다.
+        visualScale = new Vector3(1.35f, 1.35f, 1f);
         RefreshConfiguration();
     }
 

@@ -131,7 +131,10 @@ public class EnemyDirector : MonoBehaviour
         for (int i = 0; i < 20; i++)
         {
             Vector3 candidate = new Vector3(Random.Range(minX, maxX), Random.Range(minY, maxY), 0f);
-            if (player == null || Vector2.Distance(candidate, player.transform.position) >= minDistanceFromPlayer)
+            // 물가/나무/돌 같은 장애물 위에는 좀비가 생성되지 않게 맵 이동 가능 여부를 확인합니다.
+            bool farEnoughFromPlayer = player == null || Vector2.Distance(candidate, player.transform.position) >= minDistanceFromPlayer;
+            bool walkableCell = mapGenerator == null || mapGenerator.IsWalkableWorld(candidate);
+            if (farEnoughFromPlayer && walkableCell)
             {
                 return candidate;
             }

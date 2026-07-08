@@ -154,6 +154,23 @@ public class PlayerAttack : MonoBehaviour
         UpdateAmmoText();
     }
 
+    public void RefreshPistolPickupNearPlayer()
+    {
+        if (currentWeapon == WeaponType.Pistol)
+        {
+            return;
+        }
+
+        EnsurePistolPickupExists();
+        if (pistolPickup == null)
+        {
+            return;
+        }
+
+        // 맵 크기 변경이나 저장 위치 보정 후에도 시작 총이 플레이어 근처에 보이도록 다시 배치합니다.
+        pistolPickup.transform.position = FindPistolPickupPosition();
+    }
+
     private Enemy_NormalZombie FindClosestEnemy(float range)
     {
         Enemy_NormalZombie[] enemies = FindObjectsOfType<Enemy_NormalZombie>();
@@ -474,14 +491,20 @@ public class PlayerAttack : MonoBehaviour
 
     private void EnsurePistolPickupExists()
     {
-        if (pistolPickup != null || GameObject.Find("Pickup_Pistol") != null)
+        if (pistolPickup != null)
         {
-            pistolPickup = GameObject.Find("Pickup_Pistol");
+            return;
+        }
+
+        GameObject existingPickup = GameObject.Find("Pickup_Pistol");
+        if (existingPickup != null)
+        {
+            pistolPickup = existingPickup;
             return;
         }
 
         pistolPickup = new GameObject("Pickup_Pistol");
-        pistolPickup.transform.position = transform.position + (Vector3)defaultPistolSpawnOffset;
+        pistolPickup.transform.position = FindPistolPickupPosition();
 
         SpriteRenderer renderer = pistolPickup.AddComponent<SpriteRenderer>();
         renderer.sprite = pistolSprite != null ? pistolSprite : BuildRectSprite(28, 14);
@@ -492,6 +515,40 @@ public class PlayerAttack : MonoBehaviour
         CircleCollider2D trigger = pistolPickup.AddComponent<CircleCollider2D>();
         trigger.isTrigger = true;
         trigger.radius = pistolPickupRangeTiles;
+    }
+
+    private Vector3 FindPistolPickupPosition()
+    {
+        Map_Generator mapGenerator = FindObjectOfType<Map_Generator>();
+        Vector3 defaultPosition = transform.position + (Vector3)defaultPistolSpawnOffset;
+        if (mapGenerator == null || mapGenerator.IsWalkableWorld(defaultPosition))
+        {
+            return defaultPosition;
+        }
+
+        Vector2[] offsets =
+        {
+            new Vector2(2f, 0f),
+            new Vector2(-2f, 0f),
+            new Vector2(0f, 2f),
+            new Vector2(0f, -2f),
+            new Vector2(2f, 2f),
+            new Vector2(-2f, 2f),
+            new Vector2(2f, -2f),
+            new Vector2(-2f, -2f)
+        };
+
+        // 기본 위치가 물/나무/돌 위라면 플레이어 주변에서 가장 가까운 통행 가능 위치를 찾습니다.
+        foreach (Vector2 offset in offsets)
+        {
+            Vector3 candidate = transform.position + (Vector3)offset;
+            if (mapGenerator.IsWalkableWorld(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return transform.position;
     }
 
     private static Sprite BuildRectSprite(int width, int height)

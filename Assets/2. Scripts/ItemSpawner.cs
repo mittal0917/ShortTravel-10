@@ -106,6 +106,12 @@ public class ItemSpawner : MonoBehaviour
 
     private bool IsValidSupplyPosition(Vector2 candidate)
     {
+        // 물, 나무, 돌 같은 충돌 타일 위에는 물자가 생성되지 않도록 맵 생성기와 한 번 더 확인합니다.
+        if (mapGenerator != null && !mapGenerator.IsWalkableWorld(candidate))
+        {
+            return false;
+        }
+
         if (player != null && Vector2.Distance(candidate, player.transform.position) < minDistanceFromPlayer)
         {
             return false;
