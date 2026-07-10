@@ -29,9 +29,16 @@ public class Map_Generator : MonoBehaviour
 
     private TileBase collisionTile;
     private Texture2D referenceMapTexture;
+    private GameObject exitMarker;
+    private float referenceMapWorldWidth;
+    private float referenceMapWorldHeight;
 
     public Vector3 ExitApproachPointWorld { get; private set; }
     public bool HasExitHole { get; private set; }
+    public float MapMinX => 0f;
+    public float MapMinY => 0f;
+    public float MapMaxX => referenceMapWorldWidth > 0f ? referenceMapWorldWidth : mapWidth;
+    public float MapMaxY => referenceMapWorldHeight > 0f ? referenceMapWorldHeight : mapHeight;
 
     void Start()
     {
@@ -82,8 +89,8 @@ public class Map_Generator : MonoBehaviour
         // 맵 이미지를 16px = 1타일 기준으로 배치합니다.
         // 이미지 폭을 200칸에 강제로 맞추면 화면이 뭉개지고 캐릭터가 너무 작아 보여서, 픽셀아트 원본 비율을 우선합니다.
         float pixelsPerUnit = Mathf.Max(1f, referenceMapPixelsPerUnit);
-        float mapWorldWidth = referenceMapTexture.width / pixelsPerUnit;
-        float mapWorldHeight = referenceMapTexture.height / pixelsPerUnit;
+        referenceMapWorldWidth = referenceMapTexture.width / pixelsPerUnit;
+        referenceMapWorldHeight = referenceMapTexture.height / pixelsPerUnit;
         Sprite mapSprite = Sprite.Create(
             referenceMapTexture,
             new Rect(0f, 0f, referenceMapTexture.width, referenceMapTexture.height),
@@ -91,7 +98,7 @@ public class Map_Generator : MonoBehaviour
             pixelsPerUnit);
 
         GameObject mapObject = new GameObject("ReferenceMap_Background");
-        mapObject.transform.position = new Vector3(mapWorldWidth * 0.5f, mapWorldHeight * 0.5f, 0.5f);
+        mapObject.transform.position = new Vector3(referenceMapWorldWidth * 0.5f, referenceMapWorldHeight * 0.5f, 0.5f);
 
         SpriteRenderer renderer = mapObject.AddComponent<SpriteRenderer>();
         renderer.sprite = mapSprite;
@@ -216,6 +223,11 @@ public class Map_Generator : MonoBehaviour
                 Color32 color = referenceMapTexture.GetPixel(px, py);
                 total++;
 
+                if (IsFlowerPixel(color))
+                {
+                    continue;
+                }
+
                 if (IsBridgePixel(color))
                 {
                     bridge++;
@@ -280,13 +292,30 @@ public class Map_Generator : MonoBehaviour
     private bool IsRockPixel(Color32 color)
     {
         bool purpleRock = color.r > 80 && color.r < 180 && color.g > 65 && color.g < 155 && color.b > 110 && color.b > color.r + 5;
-        bool grayRock = color.r > 95 && color.g > 85 && color.b > 95 && Mathf.Abs(color.r - color.g) < 35 && Mathf.Abs(color.b - color.r) < 55;
+        bool grayRock = color.r > 95 && color.r < 175
+            && color.g > 85 && color.g < 165
+            && color.b > 95 && color.b < 190
+            && color.r + color.g + color.b < 485
+            && Mathf.Abs(color.r - color.g) < 35
+            && Mathf.Abs(color.b - color.r) < 55;
         return purpleRock || grayRock;
+    }
+
+    private bool IsFlowerPixel(Color32 color)
+    {
+        // 꽃은 밝은 흰색/노란색/분홍색 픽셀이 많아 돌 판정과 겹칠 수 있으므로 먼저 이동 가능 장식으로 제외합니다.
+        bool whiteFlower = color.r > 205 && color.g > 205 && color.b > 185;
+        bool yellowFlower = color.r > 180 && color.g > 135 && color.b < 95;
+        bool pinkFlower = color.r > 175 && color.g < 135 && color.b > 105 && color.r > color.b + 20;
+        return whiteFlower || yellowFlower || pinkFlower;
     }
 
     private void GenerateFallbackTileMap()
     {
         // 이미지 에셋을 못 읽었을 때만 기존 단순 타일맵을 사용합니다.
+        referenceMapWorldWidth = mapWidth;
+        referenceMapWorldHeight = mapHeight;
+
         for (int x = 0; x < mapWidth; x++)
         {
             for (int y = 0; y < mapHeight; y++)
@@ -342,6 +371,36 @@ public class Map_Generator : MonoBehaviour
         tilemapWall.SetTile(holeCell, null);
         ExitApproachPointWorld = tilemapFloor.GetCellCenterWorld(approachCell);
         HasExitHole = true;
+        CreateExitMarker();
+    }
+
+    private void CreateExitMarker()
+    {
+        if (exitMarker != null)
+        {
+            Destroy(exitMarker);
+        }
+
+        // 임시 탈출구 표시입니다. 문 스프라이트를 찾기 전까지 검은 네모로 위치를 확실히 보여줍니다.
+        exitMarker = new GameObject("Exit_Marker");
+        exitMarker.transform.position = ClampWorldPointInsideVisibleMap(ExitApproachPointWorld, 0.5f);
+        exitMarker.transform.localScale = new Vector3(0.9f, 0.9f, 1f);
+
+        SpriteRenderer renderer = exitMarker.AddComponent<SpriteRenderer>();
+        renderer.sprite = RuntimeSpriteFactory.CreateSquareSprite(Color.black);
+        renderer.sortingOrder = 15;
+    }
+
+    private Vector3 ClampWorldPointInsideVisibleMap(Vector3 worldPoint, float margin)
+    {
+        // 올림 처리된 마지막 타일 중앙은 실제 이미지 밖으로 나갈 수 있어, 표시용 오브젝트는 보이는 맵 안쪽으로 조입니다.
+        float minX = MapMinX + margin;
+        float maxX = MapMaxX - margin;
+        float minY = MapMinY + margin;
+        float maxY = MapMaxY - margin;
+        float clampedX = minX > maxX ? (MapMinX + MapMaxX) * 0.5f : Mathf.Clamp(worldPoint.x, minX, maxX);
+        float clampedY = minY > maxY ? (MapMinY + MapMaxY) * 0.5f : Mathf.Clamp(worldPoint.y, minY, maxY);
+        return new Vector3(clampedX, clampedY, 0f);
     }
 
     private void ApplyTilemapSorting()
@@ -398,6 +457,33 @@ public class Map_Generator : MonoBehaviour
             transparentCollisionTile.sprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
             transparentCollisionTile.colliderType = Tile.ColliderType.Grid;
             return transparentCollisionTile;
+        }
+    }
+
+    private static class RuntimeSpriteFactory
+    {
+        private static Sprite blackSquareSprite;
+
+        public static Sprite CreateSquareSprite(Color color)
+        {
+            if (blackSquareSprite != null)
+            {
+                return blackSquareSprite;
+            }
+
+            Texture2D texture = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Point;
+            for (int x = 0; x < texture.width; x++)
+            {
+                for (int y = 0; y < texture.height; y++)
+                {
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            texture.Apply();
+            blackSquareSprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 16f);
+            return blackSquareSprite;
         }
     }
 }
