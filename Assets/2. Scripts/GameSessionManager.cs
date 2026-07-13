@@ -9,6 +9,8 @@ public class GameSessionManager : MonoBehaviour
     [Header("Escape Settings")]
     [SerializeField] private float escapeDetectionRangeTiles = 3f;
     [SerializeField] private float escapeCountdownSeconds = 8f;
+    [SerializeField] private int escapeDoorMaxHealth = 5;
+    [SerializeField] private float escapeDoorDamageIntervalSeconds = 1f;
     [SerializeField] private bool requireSuppliesToEscape;
     [SerializeField] private int requiredSupplyCount;
     [SerializeField] private int carriedSupplyCount;
@@ -23,10 +25,15 @@ public class GameSessionManager : MonoBehaviour
     private Text timerText;
     private float elapsedSeconds;
     private float escapeTimer;
+    private int escapeDoorHealth;
+    private float lastEscapeDoorDamageTime = float.MinValue;
+    private bool escapeDoorClosed;
+    private bool escapeDoorBroken;
     private bool isEnding;
 
     public static GameSessionManager Instance => instance;
     public static bool IsGameEnding => instance != null && instance.isEnding;
+    public static bool IsEscapeDoorBlocking => instance != null && instance.escapeDoorClosed && !instance.escapeDoorBroken;
 
     public bool CanEscape => !requireSuppliesToEscape || carriedSupplyCount >= requiredSupplyCount;
 
@@ -67,6 +74,7 @@ public class GameSessionManager : MonoBehaviour
     {
         player = FindObjectOfType<character_move>();
         mapGenerator = FindObjectOfType<Map_Generator>();
+        escapeDoorHealth = Mathf.Max(1, escapeDoorMaxHealth);
         EnsureEnemyDirector();
         EnsureItemSpawner();
         CreateTimerUi();
@@ -180,16 +188,30 @@ public class GameSessionManager : MonoBehaviour
                 return;
             }
         }
-
-        if (!CanEscape)
+        else if (!mapGenerator.HasExitHole)
         {
             escapeTimer = 0f;
             return;
         }
 
-        float distanceToExit = Vector2.Distance(player.transform.position, mapGenerator.ExitApproachPointWorld);
-        if (distanceToExit <= escapeDetectionRangeTiles)
+        if (!CanEscape)
         {
+            ResetEscapeAttempt(false);
+            return;
+        }
+
+        bool playerInExitDoorArea = mapGenerator.IsInExitDoorArea(player.transform.position);
+        float distanceToExit = Vector2.Distance(player.transform.position, mapGenerator.ExitApproachPointWorld);
+        if (playerInExitDoorArea && distanceToExit <= escapeDetectionRangeTiles)
+        {
+            // 플레이어가 1x3 탈출구 영역에 진입하면 즉시 문을 닫아 좀비가 따라오지 못하게 합니다.
+            CloseEscapeDoor();
+            if (escapeDoorBroken)
+            {
+                escapeTimer = 0f;
+                return;
+            }
+
             escapeTimer += Time.deltaTime;
             if (escapeTimer >= escapeCountdownSeconds)
             {
@@ -198,7 +220,98 @@ public class GameSessionManager : MonoBehaviour
         }
         else
         {
-            escapeTimer = 0f;
+            ResetEscapeAttempt(!playerInExitDoorArea);
+        }
+    }
+
+    public static bool TryBlockEnemyMovementAtEscapeDoor(Vector2 currentPosition, Vector2 nextPosition, out Vector2 blockedPosition)
+    {
+        blockedPosition = currentPosition;
+        if (!IsEscapeDoorBlocking || instance == null || instance.mapGenerator == null)
+        {
+            return false;
+        }
+
+        if (!instance.mapGenerator.TryBlockEnemyAtClosedExitDoor(currentPosition, nextPosition, out blockedPosition))
+        {
+            return false;
+        }
+
+        instance.ApplyEscapeDoorDamage();
+        return true;
+    }
+
+    private void CloseEscapeDoor()
+    {
+        if (escapeDoorClosed || escapeDoorBroken)
+        {
+            return;
+        }
+
+        escapeDoorClosed = true;
+        escapeDoorHealth = Mathf.Clamp(escapeDoorHealth, 1, Mathf.Max(1, escapeDoorMaxHealth));
+        lastEscapeDoorDamageTime = Time.time;
+
+        if (mapGenerator != null)
+        {
+            mapGenerator.SetExitDoorClosed(true);
+        }
+
+        Debug.Log($"탈출구 문이 닫혔습니다. 문 체력: {escapeDoorHealth}");
+    }
+
+    private void ApplyEscapeDoorDamage()
+    {
+        if (!escapeDoorClosed || escapeDoorBroken)
+        {
+            return;
+        }
+
+        // 여러 좀비가 동시에 붙어도 문은 지정된 간격마다 1씩만 피해를 받습니다.
+        if (Time.time < lastEscapeDoorDamageTime + escapeDoorDamageIntervalSeconds)
+        {
+            return;
+        }
+
+        lastEscapeDoorDamageTime = Time.time;
+        escapeDoorHealth = Mathf.Max(0, escapeDoorHealth - 1);
+        Debug.Log($"탈출구 문이 피해를 입었습니다. 남은 체력: {escapeDoorHealth}");
+
+        if (escapeDoorHealth <= 0)
+        {
+            BreakEscapeDoor();
+        }
+    }
+
+    private void BreakEscapeDoor()
+    {
+        escapeDoorBroken = true;
+        escapeDoorClosed = false;
+        escapeTimer = 0f;
+
+        // 즉시 사망시키지 않고 문만 열어, 좀비가 자연스럽게 들어와 플레이어를 공격하게 둡니다.
+        if (mapGenerator != null)
+        {
+            mapGenerator.SetExitDoorClosed(false);
+        }
+
+        Debug.Log("탈출구 문이 파괴되어 탈출 시도가 중단되었습니다.");
+    }
+
+    private void ResetEscapeAttempt(bool reopenDoor)
+    {
+        escapeTimer = 0f;
+
+        // 문 뒤에 있는 동안에는 탈출 시도가 잠시 끊겨도 문을 다시 열지 않습니다.
+        if (!reopenDoor || !escapeDoorClosed || escapeDoorBroken)
+        {
+            return;
+        }
+
+        escapeDoorClosed = false;
+        if (mapGenerator != null)
+        {
+            mapGenerator.SetExitDoorClosed(false);
         }
     }
 

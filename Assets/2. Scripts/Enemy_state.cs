@@ -165,6 +165,13 @@ public class Enemy_NormalZombie : MonoBehaviour
         }
 
         Vector2 nextPosition = Vector2.MoveTowards(rb.position, playerTarget.position, moveSpeed * Time.fixedDeltaTime);
+        if (GameSessionManager.TryBlockEnemyMovementAtEscapeDoor(rb.position, nextPosition, out Vector2 blockedPosition))
+        {
+            rb.velocity = Vector2.zero;
+            rb.MovePosition(blockedPosition);
+            return;
+        }
+
         rb.MovePosition(nextPosition);
     }
 
@@ -257,6 +264,12 @@ public class Enemy_NormalZombie : MonoBehaviour
         PlayerStatus playerStatus = collision.gameObject.GetComponent<PlayerStatus>();
         if (playerStatus != null)
         {
+            // 닫힌 문이 플레이어와 좀비 사이를 막고 있으므로 직접 접촉 피해를 막습니다.
+            if (GameSessionManager.IsEscapeDoorBlocking)
+            {
+                return;
+            }
+
             playerStatus.TakeDamage();
         }
     }

@@ -32,6 +32,8 @@ public class Map_Generator : MonoBehaviour
     private GameObject exitMarker;
     private float referenceMapWorldWidth;
     private float referenceMapWorldHeight;
+    private Vector3Int exitHoleCell;
+    private Vector3Int exitApproachCell;
 
     public Vector3 ExitApproachPointWorld { get; private set; }
     public bool HasExitHole { get; private set; }
@@ -369,9 +371,111 @@ public class Map_Generator : MonoBehaviour
         }
 
         tilemapWall.SetTile(holeCell, null);
+        exitHoleCell = holeCell;
+        exitApproachCell = approachCell;
         ExitApproachPointWorld = tilemapFloor.GetCellCenterWorld(approachCell);
         HasExitHole = true;
         CreateExitMarker();
+    }
+
+    public void SetExitDoorClosed(bool isClosed)
+    {
+        if (!HasExitHole)
+        {
+            return;
+        }
+
+        // 처음 뚫어둔 외곽 구멍에 벽 타일을 다시 넣어 닫힌 문처럼 충돌시킵니다.
+        TileBase boundaryTile = collisionTile != null ? collisionTile : wallTile;
+        tilemapWall.SetTile(exitHoleCell, isClosed ? boundaryTile : null);
+    }
+
+    public bool IsBeyondExitDoor(Vector3 worldPosition)
+    {
+        if (!HasExitHole)
+        {
+            return false;
+        }
+
+        Vector3Int playerCell = tilemapFloor.WorldToCell(worldPosition);
+        // 구멍 셀 자체가 아니라 맵 바깥쪽 셀까지 넘어간 경우만 문 뒤로 인정합니다.
+        if (exitHoleCell.y < 0)
+        {
+            return playerCell.y < exitHoleCell.y;
+        }
+
+        if (exitHoleCell.y >= mapHeight)
+        {
+            return playerCell.y > exitHoleCell.y;
+        }
+
+        if (exitHoleCell.x < 0)
+        {
+            return playerCell.x < exitHoleCell.x;
+        }
+
+        return playerCell.x > exitHoleCell.x;
+    }
+
+    public bool IsInExitDoorArea(Vector3 worldPosition)
+    {
+        if (!HasExitHole)
+        {
+            return false;
+        }
+
+        Vector3Int playerCell = tilemapFloor.WorldToCell(worldPosition);
+        Vector3Int doorDirection = exitHoleCell - exitApproachCell;
+        Vector3Int sideDirection = Mathf.Abs(doorDirection.x) > 0
+            ? new Vector3Int(0, 1, 0)
+            : new Vector3Int(1, 0, 0);
+
+        for (int i = -1; i <= 1; i++)
+        {
+            if (playerCell == exitApproachCell + sideDirection * i)
+            {
+                return true;
+            }
+        }
+
+        return IsBeyondExitDoor(worldPosition);
+    }
+
+    public bool TryBlockEnemyAtClosedExitDoor(Vector2 currentPosition, Vector2 nextPosition, out Vector2 blockedPosition)
+    {
+        blockedPosition = currentPosition;
+        if (!HasExitHole)
+        {
+            return false;
+        }
+
+        if (IsEnemyPastClosedExitDoor(currentPosition))
+        {
+            blockedPosition = GetEnemyExitDoorBlockPointWorld();
+            return true;
+        }
+
+        if (!IsEnemyPastClosedExitDoor(nextPosition))
+        {
+            return false;
+        }
+
+        // 좀비가 닫힌 문 안쪽 1x3 탈출구 영역으로 들어가려 하면, 물리 충돌에 의존하지 않고 문 앞에서 멈춥니다.
+        blockedPosition = currentPosition;
+        return true;
+    }
+
+    private bool IsEnemyPastClosedExitDoor(Vector3 worldPosition)
+    {
+        Vector3Int enemyCell = tilemapFloor.WorldToCell(worldPosition);
+        return enemyCell == exitHoleCell || IsInExitDoorArea(worldPosition);
+    }
+
+    private Vector3 GetEnemyExitDoorBlockPointWorld()
+    {
+        Vector3Int doorDirection = exitHoleCell - exitApproachCell;
+        Vector3Int blockCell = exitApproachCell - doorDirection;
+        return tilemapFloor.GetCellCenterWorld(blockCell);
     }
 
     private void CreateExitMarker()
@@ -381,14 +485,33 @@ public class Map_Generator : MonoBehaviour
             Destroy(exitMarker);
         }
 
-        // 임시 탈출구 표시입니다. 문 스프라이트를 찾기 전까지 검은 네모로 위치를 확실히 보여줍니다.
-        exitMarker = new GameObject("Exit_Marker");
-        exitMarker.transform.position = ClampWorldPointInsideVisibleMap(ExitApproachPointWorld, 0.5f);
-        exitMarker.transform.localScale = new Vector3(0.9f, 0.9f, 1f);
+        exitMarker = new GameObject("Exit_Wall_Frame");
+        exitMarker.transform.position = Vector3.zero;
+        CreateExitWallFrameSprites(exitMarker.transform);
+    }
 
-        SpriteRenderer renderer = exitMarker.AddComponent<SpriteRenderer>();
-        renderer.sprite = RuntimeSpriteFactory.CreateSquareSprite(Color.black);
-        renderer.sortingOrder = 15;
+    private void CreateExitWallFrameSprites(Transform parent)
+    {
+        Vector3Int doorDirection = exitHoleCell - exitApproachCell;
+        Vector3Int sideDirection = Mathf.Abs(doorDirection.x) > 0
+            ? new Vector3Int(0, 1, 0)
+            : new Vector3Int(1, 0, 0);
+
+        for (int i = -1; i <= 1; i++)
+        {
+            Vector3Int frameCell = exitApproachCell + sideDirection * i;
+            Vector3 framePosition = tilemapFloor.GetCellCenterWorld(frameCell);
+            framePosition = ClampWorldPointInsideVisibleMap(framePosition, 0.5f);
+
+            GameObject wallPiece = new GameObject($"Exit_Wall_{i + 2}");
+            wallPiece.transform.SetParent(parent, false);
+            wallPiece.transform.position = framePosition;
+            wallPiece.transform.localScale = new Vector3(0.95f, 0.95f, 1f);
+
+            SpriteRenderer renderer = wallPiece.AddComponent<SpriteRenderer>();
+            renderer.sprite = RuntimeSpriteFactory.CreateExitWallSprite();
+            renderer.sortingOrder = 4;
+        }
     }
 
     private Vector3 ClampWorldPointInsideVisibleMap(Vector3 worldPoint, float margin)
@@ -462,28 +585,35 @@ public class Map_Generator : MonoBehaviour
 
     private static class RuntimeSpriteFactory
     {
-        private static Sprite blackSquareSprite;
+        private static Sprite exitWallSprite;
 
-        public static Sprite CreateSquareSprite(Color color)
+        public static Sprite CreateExitWallSprite()
         {
-            if (blackSquareSprite != null)
+            if (exitWallSprite != null)
             {
-                return blackSquareSprite;
+                return exitWallSprite;
             }
 
-            Texture2D texture = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+            const int size = 16;
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Point;
-            for (int x = 0; x < texture.width; x++)
+
+            Color mortar = new Color(0.18f, 0.18f, 0.2f, 1f);
+            Color stoneA = new Color(0.42f, 0.42f, 0.45f, 1f);
+            Color stoneB = new Color(0.34f, 0.34f, 0.37f, 1f);
+
+            for (int x = 0; x < size; x++)
             {
-                for (int y = 0; y < texture.height; y++)
+                for (int y = 0; y < size; y++)
                 {
-                    texture.SetPixel(x, y, color);
+                    bool mortarLine = x == 0 || x == size - 1 || y == 0 || y == size - 1 || y == 7 || (y < 7 && x == 8) || (y > 7 && x == 5);
+                    texture.SetPixel(x, y, mortarLine ? mortar : ((x + y) % 5 == 0 ? stoneB : stoneA));
                 }
             }
 
             texture.Apply();
-            blackSquareSprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 16f);
-            return blackSquareSprite;
+            exitWallSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            return exitWallSprite;
         }
     }
 }
