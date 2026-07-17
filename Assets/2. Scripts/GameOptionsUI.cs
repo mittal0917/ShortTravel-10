@@ -64,6 +64,7 @@ public class GameOptionsUI : MonoBehaviour
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(false);
+            GameSessionManager.SetGamePaused(false);
         }
 
         if (optionButton != null)
@@ -92,6 +93,8 @@ public class GameOptionsUI : MonoBehaviour
         {
             settingsPanel.SetActive(true);
             settingsPanel.transform.SetAsLastSibling();
+            // 설정창이 떠 있는 동안 게임과 진행 시간이 같이 멈추게 합니다.
+            GameSessionManager.SetGamePaused(true);
         }
     }
 
@@ -101,11 +104,13 @@ public class GameOptionsUI : MonoBehaviour
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(false);
+            GameSessionManager.SetGamePaused(false);
         }
     }
 
     private static void GoLobby()
     {
+        GameSessionManager.SetGamePaused(false);
         SaveCurrentPlayerPosition();
 
         SceneManager.LoadScene("LobbyScene");

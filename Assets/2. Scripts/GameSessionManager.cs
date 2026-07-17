@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class GameSessionManager : MonoBehaviour
 {
     private static GameSessionManager instance;
+    private static float timeScaleBeforePause = 1f;
 
     [Header("Escape Settings")]
     [SerializeField] private float escapeDetectionRangeTiles = 3f;
@@ -34,6 +35,7 @@ public class GameSessionManager : MonoBehaviour
     public static GameSessionManager Instance => instance;
     public static bool IsGameEnding => instance != null && instance.isEnding;
     public static bool IsEscapeDoorBlocking => instance != null && instance.escapeDoorClosed && !instance.escapeDoorBroken;
+    public static bool IsGamePaused { get; private set; }
 
     public bool CanEscape => !requireSuppliesToEscape || carriedSupplyCount >= requiredSupplyCount;
 
@@ -101,6 +103,8 @@ public class GameSessionManager : MonoBehaviour
             return;
         }
 
+        SetGamePaused(false);
+
         if (instance != null)
         {
             instance.isEnding = true;
@@ -110,6 +114,26 @@ public class GameSessionManager : MonoBehaviour
         GameProgress.ClearSave();
         GameProgress.ClearNewGameRequest();
         SceneManager.LoadScene("LobbyScene");
+    }
+
+    public static void SetGamePaused(bool paused)
+    {
+        if (paused == IsGamePaused)
+        {
+            return;
+        }
+
+        if (paused)
+        {
+            // 설정창이 열린 동안에는 게임 진행과 진행 시간 계산이 함께 멈추도록 전체 시간을 정지합니다.
+            timeScaleBeforePause = Time.timeScale > 0f ? Time.timeScale : 1f;
+            Time.timeScale = 0f;
+            IsGamePaused = true;
+            return;
+        }
+
+        Time.timeScale = timeScaleBeforePause > 0f ? timeScaleBeforePause : 1f;
+        IsGamePaused = false;
     }
 
     public void SetSupplyProgress(int currentCount)

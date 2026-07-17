@@ -4,9 +4,9 @@ public class pistol : MonoBehaviour
 {
     public float attackRange = 5f;
     public float damage = 120f;
-    public int maxAmmo = 6;
+    public int maxAmmo = 33;
     public float reloadTime = 2.0f;
-    public float fireRate = 0.3f;
+    public float fireRate = 1f;
     public LayerMask enemyLayer;
 
     private int currentAmmo;

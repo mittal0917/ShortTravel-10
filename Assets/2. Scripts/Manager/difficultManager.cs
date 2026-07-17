@@ -31,15 +31,15 @@ public class difficultManager : MonoBehaviour
         {
             case Difficulty.Easy:
                 batDurability = 100f;
-                maxAmmo = 99;
+                maxAmmo = 33;
                 break;
             case Difficulty.Normal:
                 batDurability = 50f;
-                maxAmmo = 30;
+                maxAmmo = 33;
                 break;
             case Difficulty.Hard:
                 batDurability = 20f; // 내구도 약해짐
-                maxAmmo = 10;        // 탄약 보유량 제한
+                maxAmmo = 33;        // 총알 최대 보유량은 모든 난이도에서 33발로 고정
                 break;
         }
 

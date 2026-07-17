@@ -47,6 +47,7 @@ public class UI_Game : MonoBehaviour
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(false);
+            GameSessionManager.SetGamePaused(false);
         }
     }
 
@@ -65,6 +66,8 @@ public class UI_Game : MonoBehaviour
         {
             settingsPanel.SetActive(true);
             settingsPanel.transform.SetAsLastSibling();
+            // 설정창을 누르면 게임과 진행 시간이 멈추도록 일시정지 상태를 켭니다.
+            GameSessionManager.SetGamePaused(true);
             BindButtons();
         }
         else
@@ -80,11 +83,15 @@ public class UI_Game : MonoBehaviour
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(false);
+            // 설정창을 닫으면 기존 속도로 게임을 다시 진행합니다.
+            GameSessionManager.SetGamePaused(false);
         }
     }
 
     public void OnClickLobby()
     {
+        GameSessionManager.SetGamePaused(false);
+
         character_move player = FindObjectOfType<character_move>();
         if (player != null)
         {

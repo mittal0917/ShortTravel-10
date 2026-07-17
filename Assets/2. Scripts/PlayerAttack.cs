@@ -19,7 +19,7 @@ public class PlayerAttack : MonoBehaviour
 
     [Header("Pistol")]
     [SerializeField] private float pistolRangeTiles = 6f;
-    [SerializeField] private float pistolAttackIntervalSeconds = 3f;
+    [SerializeField] private float pistolAttackIntervalSeconds = 1f;
     [SerializeField] private float pistolDamage = 3f;
     [SerializeField] private float pistolPickupRangeTiles = 1f;
     [SerializeField] private float bulletVisualSpeed = 14f;
@@ -27,9 +27,9 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private Vector2 defaultPistolSpawnOffset = new Vector2(3f, 0f);
 
     [Header("Ammo")]
-    [SerializeField] private int startingAmmo = 50;
-    [SerializeField] private int maxAmmo = 120;
-    [SerializeField] private int supplyAmmoBonus = 50;
+    [SerializeField] private int startingAmmo = 33;
+    [SerializeField] private int maxAmmo = 33;
+    [SerializeField] private int supplyAmmoBonus = 10;
 
     private character_move movement;
     private WeaponType currentWeapon = WeaponType.Bat;
@@ -142,7 +142,7 @@ public class PlayerAttack : MonoBehaviour
 
         currentAmmo--;
         UpdateAmmoText();
-        SpawnBulletVisual(target.transform.position);
+        SpawnBulletVisual(target);
         target.TakeDamage(pistolDamage);
         StartCoroutine(FlashPistol());
         return true;
@@ -448,8 +448,9 @@ public class PlayerAttack : MonoBehaviour
         pistolRenderer.enabled = false;
     }
 
-    private void SpawnBulletVisual(Vector3 targetPosition)
+    private void SpawnBulletVisual(Enemy_NormalZombie target)
     {
+        Vector3 targetPosition = target != null ? target.transform.position : transform.position + (Vector3)GetFacingDirection();
         Vector2 direction = targetPosition - transform.position;
         if (direction.sqrMagnitude <= 0.001f)
         {
@@ -470,16 +471,24 @@ public class PlayerAttack : MonoBehaviour
         renderer.sortingOrder = 25;
 
         bulletObject.transform.localScale = bulletSprite != null ? new Vector3(0.75f, 0.75f, 1f) : new Vector3(0.35f, 0.35f, 1f);
-        StartCoroutine(MoveBulletVisual(bulletObject, direction));
+        StartCoroutine(MoveBulletVisual(bulletObject, direction, target));
     }
 
-    private IEnumerator MoveBulletVisual(GameObject bulletObject, Vector2 direction)
+    private IEnumerator MoveBulletVisual(GameObject bulletObject, Vector2 direction, Enemy_NormalZombie target)
     {
+        Vector3 startPosition = bulletObject != null ? bulletObject.transform.position : transform.position;
+        float hitDistance = GetBulletHitDistance(startPosition, target);
         float elapsed = 0f;
         while (bulletObject != null && elapsed < bulletVisualLifetimeSeconds)
         {
             elapsed += Time.deltaTime;
             bulletObject.transform.position += (Vector3)(direction * bulletVisualSpeed * Time.deltaTime);
+            // 총알이 좀비의 몸에 닿은 거리까지 이동하면 관통하지 않고 바로 사라지게 합니다.
+            if (Vector2.Distance(startPosition, bulletObject.transform.position) >= hitDistance)
+            {
+                break;
+            }
+
             yield return null;
         }
 
@@ -487,6 +496,21 @@ public class PlayerAttack : MonoBehaviour
         {
             Destroy(bulletObject);
         }
+    }
+
+    private float GetBulletHitDistance(Vector3 startPosition, Enemy_NormalZombie target)
+    {
+        if (target == null)
+        {
+            return bulletVisualSpeed * bulletVisualLifetimeSeconds;
+        }
+
+        Collider2D targetCollider = target.GetComponent<Collider2D>();
+        Vector2 hitPoint = targetCollider != null
+            ? targetCollider.ClosestPoint(startPosition)
+            : (Vector2)target.transform.position;
+
+        return Mathf.Max(0.05f, Vector2.Distance(startPosition, hitPoint));
     }
 
     private void EnsurePistolPickupExists()

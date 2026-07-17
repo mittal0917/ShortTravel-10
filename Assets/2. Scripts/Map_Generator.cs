@@ -353,29 +353,40 @@ public class Map_Generator : MonoBehaviour
         switch (side)
         {
             case 0:
-                holeCell = new Vector3Int(Random.Range(0, mapWidth), -1, 0);
+                holeCell = new Vector3Int(GetRandomExitCoordinate(mapWidth), -1, 0);
                 approachCell = new Vector3Int(holeCell.x, 0, 0);
                 break;
             case 1:
-                holeCell = new Vector3Int(Random.Range(0, mapWidth), mapHeight, 0);
+                holeCell = new Vector3Int(GetRandomExitCoordinate(mapWidth), mapHeight, 0);
                 approachCell = new Vector3Int(holeCell.x, mapHeight - 1, 0);
                 break;
             case 2:
-                holeCell = new Vector3Int(-1, Random.Range(0, mapHeight), 0);
+                holeCell = new Vector3Int(-1, GetRandomExitCoordinate(mapHeight), 0);
                 approachCell = new Vector3Int(0, holeCell.y, 0);
                 break;
             default:
-                holeCell = new Vector3Int(mapWidth, Random.Range(0, mapHeight), 0);
+                holeCell = new Vector3Int(mapWidth, GetRandomExitCoordinate(mapHeight), 0);
                 approachCell = new Vector3Int(mapWidth - 1, holeCell.y, 0);
                 break;
         }
 
-        tilemapWall.SetTile(holeCell, null);
         exitHoleCell = holeCell;
         exitApproachCell = approachCell;
+        SetExitDoorTiles(false);
         ExitApproachPointWorld = tilemapFloor.GetCellCenterWorld(approachCell);
         HasExitHole = true;
         CreateExitMarker();
+    }
+
+    private int GetRandomExitCoordinate(int mapLength)
+    {
+        if (mapLength <= 2)
+        {
+            return Mathf.Max(0, mapLength / 2);
+        }
+
+        // 3칸짜리 탈출구가 모서리에 걸리면 양끝 칸이 잘려 보이므로, 양쪽 끝 한 칸은 피해서 생성합니다.
+        return Random.Range(1, mapLength - 1);
     }
 
     public void SetExitDoorClosed(bool isClosed)
@@ -385,9 +396,19 @@ public class Map_Generator : MonoBehaviour
             return;
         }
 
-        // 처음 뚫어둔 외곽 구멍에 벽 타일을 다시 넣어 닫힌 문처럼 충돌시킵니다.
+        SetExitDoorTiles(isClosed);
+    }
+
+    private void SetExitDoorTiles(bool isClosed)
+    {
         TileBase boundaryTile = collisionTile != null ? collisionTile : wallTile;
-        tilemapWall.SetTile(exitHoleCell, isClosed ? boundaryTile : null);
+        Vector3Int sideDirection = GetExitSideDirection();
+
+        for (int i = -1; i <= 1; i++)
+        {
+            // 화면에는 3칸으로 보이는데 충돌은 1칸만 열리는 일이 없도록 외곽 벽도 3칸 모두 같이 여닫습니다.
+            tilemapWall.SetTile(exitHoleCell + sideDirection * i, isClosed ? boundaryTile : null);
+        }
     }
 
     public bool IsBeyondExitDoor(Vector3 worldPosition)
@@ -425,10 +446,7 @@ public class Map_Generator : MonoBehaviour
         }
 
         Vector3Int playerCell = tilemapFloor.WorldToCell(worldPosition);
-        Vector3Int doorDirection = exitHoleCell - exitApproachCell;
-        Vector3Int sideDirection = Mathf.Abs(doorDirection.x) > 0
-            ? new Vector3Int(0, 1, 0)
-            : new Vector3Int(1, 0, 0);
+        Vector3Int sideDirection = GetExitSideDirection();
 
         for (int i = -1; i <= 1; i++)
         {
@@ -492,10 +510,7 @@ public class Map_Generator : MonoBehaviour
 
     private void CreateExitWallFrameSprites(Transform parent)
     {
-        Vector3Int doorDirection = exitHoleCell - exitApproachCell;
-        Vector3Int sideDirection = Mathf.Abs(doorDirection.x) > 0
-            ? new Vector3Int(0, 1, 0)
-            : new Vector3Int(1, 0, 0);
+        Vector3Int sideDirection = GetExitSideDirection();
 
         for (int i = -1; i <= 1; i++)
         {
@@ -512,6 +527,14 @@ public class Map_Generator : MonoBehaviour
             renderer.sprite = RuntimeSpriteFactory.CreateExitWallSprite();
             renderer.sortingOrder = 4;
         }
+    }
+
+    private Vector3Int GetExitSideDirection()
+    {
+        Vector3Int doorDirection = exitHoleCell - exitApproachCell;
+        return Mathf.Abs(doorDirection.x) > 0
+            ? new Vector3Int(0, 1, 0)
+            : new Vector3Int(1, 0, 0);
     }
 
     private Vector3 ClampWorldPointInsideVisibleMap(Vector3 worldPoint, float margin)
