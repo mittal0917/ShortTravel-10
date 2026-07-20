@@ -113,7 +113,8 @@ public class GameOptionsUI : MonoBehaviour
         GameSessionManager.SetGamePaused(false);
         SaveCurrentPlayerPosition();
 
-        SceneManager.LoadScene("LobbyScene");
+        // 설정창의 로비 버튼도 동일한 로딩 연출을 사용합니다.
+        GameSceneTransition.LoadSceneWithLoading("LobbyScene");
     }
 
     private static void SaveCurrentPlayerPosition()

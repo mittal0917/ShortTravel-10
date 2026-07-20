@@ -87,13 +87,15 @@ public class UI_Lobby : MonoBehaviour
     private void OnClickPlay()
     {
         GameProgress.RequestContinueGame();
-        SceneManager.LoadScene("GameScene");
+        // 로비에서 게임으로 이동할 때 검은 로딩 화면을 먼저 보여줍니다.
+        GameSceneTransition.LoadSceneWithLoading("GameScene");
     }
 
     private void OnClickNewGame()
     {
         GameProgress.RequestNewGame();
-        SceneManager.LoadScene("GameScene");
+        // 새 게임 시작도 같은 로딩 연출을 거쳐 게임씬으로 들어갑니다.
+        GameSceneTransition.LoadSceneWithLoading("GameScene");
     }
 
     private void ResizeSettingsControls()

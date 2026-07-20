@@ -98,7 +98,8 @@ public class UI_Game : MonoBehaviour
             GameProgress.SavePlayerPosition(player.transform.position);
         }
 
-        SceneManager.LoadScene("LobbyScene");
+        // 게임에서 로비로 돌아갈 때도 중간 로딩 화면을 보여줍니다.
+        GameSceneTransition.LoadSceneWithLoading("LobbyScene");
     }
 
     private void ResolveSettingsPanel()

@@ -4,7 +4,7 @@ public class EnemyDirector : MonoBehaviour
 {
     [Header("Spawn Settings")]
     [SerializeField] private int initialEnemyCount = 4;
-    [SerializeField] private float spawnIntervalSeconds = 12f;
+    [SerializeField] private float spawnIntervalSeconds = 6f;
     [SerializeField] private float spawnMarginFromEdge = 8f;
     [SerializeField] private float minDistanceFromPlayer = 6f;
 
@@ -26,6 +26,7 @@ public class EnemyDirector : MonoBehaviour
 
     void Awake()
     {
+        // 초기 좀비 리스폰 속도를 기존보다 2배 빠르게 시작합니다.
         baseSpawnIntervalSeconds = spawnIntervalSeconds;
     }
 

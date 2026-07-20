@@ -113,7 +113,13 @@ public class GameSessionManager : MonoBehaviour
         Debug.Log($"Game ended: {reason}");
         GameProgress.ClearSave();
         GameProgress.ClearNewGameRequest();
-        SceneManager.LoadScene("LobbyScene");
+
+        // 사망과 탈출 성공은 각각 다른 색상의 종료 문구를 보여준 뒤 로비로 이동합니다.
+        bool escaped = reason == "Escape completed";
+        GameSceneTransition.PlayEnding(
+            escaped ? "GameClear" : "GameOver",
+            escaped ? Color.white : new Color(1f, 0.35f, 0.35f, 1f),
+            "LobbyScene");
     }
 
     public static void SetGamePaused(bool paused)
