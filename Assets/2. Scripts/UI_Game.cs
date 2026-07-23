@@ -46,6 +46,7 @@ public class UI_Game : MonoBehaviour
 
         if (settingsPanel != null)
         {
+            UI_Lobby.ApplyGuideToSettingsPanel(settingsPanel);
             settingsPanel.SetActive(false);
             GameSessionManager.SetGamePaused(false);
         }
@@ -64,6 +65,7 @@ public class UI_Game : MonoBehaviour
 
         if (settingsPanel != null)
         {
+            UI_Lobby.ApplyGuideToSettingsPanel(settingsPanel);
             settingsPanel.SetActive(true);
             settingsPanel.transform.SetAsLastSibling();
             // 설정창을 누르면 게임과 진행 시간이 멈추도록 일시정지 상태를 켭니다.

@@ -63,6 +63,7 @@ public class GameOptionsUI : MonoBehaviour
 
         if (settingsPanel != null)
         {
+            UI_Lobby.ApplyGuideToSettingsPanel(settingsPanel);
             settingsPanel.SetActive(false);
             GameSessionManager.SetGamePaused(false);
         }
@@ -91,6 +92,7 @@ public class GameOptionsUI : MonoBehaviour
         GameObject settingsPanel = FindSceneObject(SceneManager.GetActiveScene(), "Panel_Settings");
         if (settingsPanel != null)
         {
+            UI_Lobby.ApplyGuideToSettingsPanel(settingsPanel);
             settingsPanel.SetActive(true);
             settingsPanel.transform.SetAsLastSibling();
             // 설정창이 떠 있는 동안 게임과 진행 시간이 같이 멈추게 합니다.
